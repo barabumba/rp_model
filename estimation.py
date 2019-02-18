@@ -31,21 +31,29 @@ class LikelihoodEstimation(object):
         print second_component
 
     def run(self):
-        filter_output = np.matmul(np.sqrt(self.filter_matrix), self.random_signal.get()) / self.random_signal.n
-        print filter_output - self.second_component
+        filter_output = np.matmul(self.filter_matrix, self.random_signal.get()) / self.random_signal.n
+        self.out = filter_output - self.second_component
+        # print filter_output, self.random_signal.m/2*0.707*np.pi
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     _f = lambda x: 1./(1+(np.pi*x)**2)
-    rsg = RandomSignalGenerator(_f, 2**10, 2**4)
+    rsg = RandomSignalGenerator(_f, 2**15, 2**5)
     rsg.gen()
     # plt.plot(rsg.get_samples())
     estimator = LikelihoodEstimation(rsg)
     estimator.init_filter_matrix()
     estimator.init_second_component()
-    estimator.run()
-    # test = PSDAveraging(rsg, size=2**20)
+
+    average_out = 0
+    n = 1000
+    for i in range(n):
+        estimator.run()
+        average_out += estimator.out / n
+        rsg.gen()
+    print average_out, estimator.random_signal.m/2*0.707
+    # test = PSDAveraging(rsg, size=2**12)
     # test.average()
     # test.plot()
     plt.show()

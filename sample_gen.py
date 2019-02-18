@@ -15,9 +15,8 @@ class RandomSignalGenerator(object):
         xi, n = np.random.normal(size=self.n), np.random.normal(size=self.n)
         fft_xi, fft_n = np.fft.fft(xi), np.fft.fft(n)
         fft_xi *= np.sqrt(self.normalized_psd_samples)
-        fft = fft_xi + fft_n
+        fft = fft_n #+ fft_xi
         self.squared_fft_coefficients = np.real(fft * fft.conjugate())
-        # self.squared_fft_coefficients = fft
 
     def get(self):
         return self.squared_fft_coefficients
