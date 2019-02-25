@@ -29,6 +29,7 @@ class LikelihoodEstimation(object):
         def integrand(x, q=1):
             return np.log(1+q*self.random_signal.normalized_psd_fun(x))
         i = quad(lambda x: integrand(x), -np.inf, np.inf)[0]
+        print i
         for m in self.bandwidth_search_range:
             second_component.append(m*i)
         self.second_component = np.array(second_component)
@@ -47,19 +48,13 @@ if __name__ == '__main__':
     rsg = RandomSignalGenerator(_f, 2**18, 2**11)
     estimator = LikelihoodEstimation(rsg)
 
-    out = 0
-    max_ = 0
-    l = 20
+    static = []
+    l = 100
     for i in range(l):
         print i
         rsg.gen()
-        max_ += estimator.run()
-        out += estimator.out
-        plt.plot(estimator.bandwidth_search_range, estimator.out)
-    plt.axvline(2**11)
-    plt.axvline(max_/l)
-    plt.plot(estimator.bandwidth_search_range, out/l, linewidth=2)
-    # test = PSDAveraging(rsg, size=2**12)
-    # test.average()
-    # test.plot()
+        estimator.run()
+        static.append(estimator.out)
+    static = np.array(static)
+    print np.mean(static, axis=0), np.var(static, axis=0)
     plt.show()
