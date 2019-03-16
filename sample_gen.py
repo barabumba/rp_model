@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import quad
 
 
 class RandomSignalGenerator(object):
@@ -20,7 +21,7 @@ class RandomSignalGenerator(object):
         self.fft = fft
         self.squared_fft_coefficients = np.real(fft * fft.conjugate())
 
-    def get(self):
+    def get_squared_fft_coefficients(self):
         return self.squared_fft_coefficients
 
     def get_sample(self):
@@ -32,16 +33,24 @@ class RandomSignalGeneratorTest(object):
         self.rsg = random_signal_generator
         self.n = size
         self.psd_average = None
-        self.autocorrelation = None
+        self.acf = None
 
-    def autocorrelation_function(self):
-        sample = np.real(np.fft.ifft(self.rsg.fft))
+    def acf_test(self):
+        sample = self.rsg.get_sample()
         n = len(sample)
         partial_sample = sample[:int(0.95*n)]
 
-        self.autocorrelation = np.correlate(sample, partial_sample) / np.var(partial_sample)
-        plt.plot(self.autocorrelation)
+        self.acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
+        plt.plot(np.real(np.fft.fft(self.acf)))
         plt.grid()
+
+    def dispersion_test(self):
+        print("#"*50, "\nDISPERSION TEST")
+        print("Actual dispersion: {0:f}".format(np.sum(self.rsg.get_sample()**2)/self.rsg.n))
+        _f = self.rsg.normalized_psd_fun
+        _const = 0.5 * self.rsg.n / self.rsg.m
+        print("Expected dispersion: {0:f}".format(quad(lambda x: _f(x), 0, _const)[0]/_const))
+        print("#" * 50)
 
     def average(self):
         psd_average = 0
@@ -60,8 +69,10 @@ class RandomSignalGeneratorTest(object):
 if __name__ == '__main__':
     _f = lambda x: 1. / (1 + (np.pi * x) ** 2)
     rsg = RandomSignalGenerator(_f, 2 ** 18, 2 ** 12)
-    rsg.gen()
     tester = RandomSignalGeneratorTest(rsg)
-    tester.autocorrelation_function()
+
+    rsg.gen()
+    tester.dispersion_test()
+    tester.acf_test()
     # plt.plot(rsg.get_sample())
     plt.show()
