@@ -38,7 +38,7 @@ class RandomSignalGeneratorTest(object):
     def acf_test(self):
         sample = self.rsg.get_sample()
         n = len(sample)
-        partial_sample = sample[:int(0.95*n)]
+        partial_sample = sample[:int(0.98*n)]
 
         self.acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
         plt.plot(np.real(np.fft.fft(self.acf)))
@@ -68,7 +68,7 @@ class RandomSignalGeneratorTest(object):
 
 if __name__ == '__main__':
     _f = lambda x: 1. / (1 + (np.pi * x) ** 2)
-    rsg = RandomSignalGenerator(_f, 2 ** 18, 2 ** 12)
+    rsg = RandomSignalGenerator(_f, 2 ** 20, 2 ** 12)
     tester = RandomSignalGeneratorTest(rsg)
 
     rsg.gen()
