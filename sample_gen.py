@@ -38,11 +38,15 @@ class RandomSignalGeneratorTest(object):
     def acf_test(self):
         sample = self.rsg.get_sample()
         n = len(sample)
-        partial_sample = sample[:int(0.98*n)]
+        partial_sample = sample[:int(n/(2**10))*(2**10-1)]
 
         self.acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
-        plt.plot(np.real(np.fft.fft(self.acf)))
-        plt.grid()
+        acf_expected = np.real(np.fft.ifft(self.rsg.normalized_psd_samples))[:len(self.acf)]/np.var(sample)
+
+        fig_, ax = plt.subplots()
+        ax.plot(acf_expected)
+        ax.plot(self.acf)
+        ax.grid()
 
     def dispersion_test(self):
         print("#"*50, "\nDISPERSION TEST")
@@ -68,7 +72,7 @@ class RandomSignalGeneratorTest(object):
 
 if __name__ == '__main__':
     _f = lambda x: 1. / (1 + (np.pi * x) ** 2)
-    rsg = RandomSignalGenerator(_f, 2 ** 20, 2 ** 12)
+    rsg = RandomSignalGenerator(_f, 2 ** 22, 2 ** 12)
     tester = RandomSignalGeneratorTest(rsg)
 
     rsg.gen()
