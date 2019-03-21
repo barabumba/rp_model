@@ -21,7 +21,7 @@ class LikelihoodEstimation(object):
             transfer_function_samples = psd_samples / (psd_samples + 1)
             filter_matrix.append(transfer_function_samples)
         self.filter_matrix = np.array(filter_matrix)
-        print 'Filter is initialized'
+        print('Filter is initialized')
 
     def init_second_component(self):
         second_component = []
@@ -29,14 +29,14 @@ class LikelihoodEstimation(object):
         def integrand(x, q=1):
             return np.log(1+q*self.random_signal.normalized_psd_fun(x))
         i = quad(lambda x: integrand(x), -np.inf, np.inf)[0]
-        print i
+        print(i)
         for m in self.bandwidth_search_range:
             second_component.append(m*i)
         self.second_component = np.array(second_component)
-        print 'Second component is initialized'
+        print('Second component is initialized')
 
     def run(self):
-        filter_output = np.matmul(self.filter_matrix, self.random_signal.get()) / self.random_signal.n
+        filter_output = np.matmul(self.filter_matrix, self.random_signal.get_squared_fft_coefficients()) / self.random_signal.n
         self.out = filter_output - self.second_component
         return self.bandwidth_search_range[np.argmax(filter_output)]
         # print filter_output, self.random_signal.m/2*0.707*np.pi
@@ -51,10 +51,10 @@ if __name__ == '__main__':
     static = []
     l = 100
     for i in range(l):
-        print i
+        print(i)
         rsg.gen()
         estimator.run()
         static.append(estimator.out)
     static = np.array(static)
-    print np.mean(static, axis=0), np.var(static, axis=0)
+    print(np.mean(static, axis=0), np.var(static, axis=0))
     plt.show()

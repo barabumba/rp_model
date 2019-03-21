@@ -17,8 +17,8 @@ class RandomSignalGenerator(object):
         xi, n = np.random.normal(size=self.n), np.random.normal(size=self.n)
         fft_xi, fft_n = np.fft.fft(xi), np.fft.fft(n)
         fft_xi *= np.sqrt(self.normalized_psd_samples)
-        fft = 0*fft_n + fft_xi
-        self.fft = fft
+        fft = fft_n + fft_xi
+        self.fft = fft_xi
         self.squared_fft_coefficients = np.real(fft * fft.conjugate())
 
     def get_squared_fft_coefficients(self):
@@ -34,6 +34,10 @@ class RandomSignalGeneratorTest(object):
         self.n = size
         self.psd_average = None
         self.acf = None
+
+    def show_realisation(self):
+        fig_, ax = plt.subplots()
+        ax.plot(self.rsg.get_sample()[:int(self.rsg.n/self.rsg.m)])
 
     def acf_test(self):
         sample = self.rsg.get_sample()
@@ -76,6 +80,7 @@ if __name__ == '__main__':
     tester = RandomSignalGeneratorTest(rsg)
 
     rsg.gen()
+    tester.show_realisation()
     tester.dispersion_test()
     tester.acf_test()
     # plt.plot(rsg.get_sample())
