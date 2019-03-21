@@ -32,56 +32,62 @@ class RandomSignalGeneratorTest(object):
     def __init__(self, random_signal_generator, size=1000):
         self.rsg = random_signal_generator
         self.n = size
-        self.psd_average = None
-        self.acf = None
 
-    def show_realisation(self):
-        fig_, ax = plt.subplots()
-        ax.plot(self.rsg.get_sample()[:int(self.rsg.n/self.rsg.m)])
+    def show_realisation(self, external_axis=False):
+        sample = self.rsg.get_sample()[:int(8. * self.rsg.n / self.rsg.m / 2)]
+        if not external_axis:
+            fig_, ax = plt.subplots()
+            ax.plot(sample, label='realisation')
+            ax.grid(1)
+            ax.legend()
+        return sample
 
-    def acf_test(self):
+    def acf_test(self, external_axis=False):
         sample = self.rsg.get_sample()
-        n = len(sample)
-        partial_sample = sample[:int(n/(2**10))*(2**10-1)]
+        partial_sample = sample[:int(self.rsg.n*(self.rsg.m-8./2)/self.rsg.m)+1]
 
-        self.acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
-        acf_expected = np.real(np.fft.ifft(self.rsg.normalized_psd_samples))[:len(self.acf)]/np.var(sample)
+        acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
+        acf_expected = np.real(np.fft.ifft(self.rsg.normalized_psd_samples))[:len(acf)]
+        acf_expected /= max(acf_expected)
 
-        fig_, ax = plt.subplots()
-        ax.plot(acf_expected)
-        ax.plot(self.acf)
-        ax.grid()
+        if not external_axis:
+            fig_, ax = plt.subplots()
+            ax.plot(acf_expected, label='Expected ACF')
+            ax.plot(acf, label='Actual ACF')
+            ax.legend()
+            ax.grid(1)
+        return acf, acf_expected
 
-    def dispersion_test(self):
-        print("#"*50, "\nDISPERSION TEST")
-        print("Actual dispersion: {0:f}".format(np.sum(self.rsg.get_sample()**2)/self.rsg.n))
-        _f = self.rsg.normalized_psd_fun
+    def dispersion_test(self, external_print=False):
+        var_actual = np.sum(self.rsg.get_sample()**2)/self.rsg.n
         _const = 0.5 * self.rsg.n / self.rsg.m
-        print("Expected dispersion: {0:f}".format(quad(lambda x: _f(x), 0, _const)[0]/_const))
-        print("#" * 50)
+        var_expected = quad(lambda x: self.rsg.normalized_psd_fun(x), 0, _const)[0]/_const
 
-    def average(self):
-        psd_average = 0
-        for i in range(self.n):
-            self.rsg.gen()
-            psd_average += np.real(self.rsg.squared_fft_coefficients) / self.n
-        self.psd_average = psd_average
-
-    def plot(self):
-        new_fig = plt.figure().add_subplot(111)
-        new_fig.plot(self.rsg.frequencies, self.psd_average / self.rsg.n)
-        new_fig.plot(self.rsg.frequencies, self.rsg.normalized_psd_samples)
-        new_fig.grid()
+        if not external_print:
+            print("#" * 30)
+            print("Actual dispersion: {0:f}".format(var_actual))
+            print("Expected dispersion: {0:f}".format(var_expected))
+            print("#" * 30)
+        return var_actual, var_expected
 
 
 if __name__ == '__main__':
-    _f = lambda x: 1. / (1 + (np.pi * x) ** 2)
-    rsg = RandomSignalGenerator(_f, 2 ** 22, 2 ** 12)
-    tester = RandomSignalGeneratorTest(rsg)
+    delta = 0.75
 
+    def _f(x):
+        if abs(x) <= (1-delta)/2:
+            return 1.
+        elif x < -(1-delta)/2:
+            return 1. / (1 + (np.pi / delta * (x + (1-delta)/2)) ** 2)
+        else:
+            return 1. / (1 + (np.pi / delta * (x - (1-delta)/2)) ** 2)
+
+    rsg = RandomSignalGenerator(_f, 2 ** 22, 2 ** 12)
     rsg.gen()
+
+    tester = RandomSignalGeneratorTest(rsg)
     tester.show_realisation()
     tester.dispersion_test()
     tester.acf_test()
-    # plt.plot(rsg.get_sample())
+
     plt.show()
