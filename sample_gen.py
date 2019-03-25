@@ -10,12 +10,12 @@ class RandomSignalGenerator(object):
         self.fft = None
         self.n = size
         self.m = bandwidth
-        self.frequencies = np.fft.fftfreq(size, 1./size)
+        self.frequencies = np.fft.rfftfreq(size, 1./size)
         self.normalized_psd_samples = self.normalized_psd_fun(self.frequencies/self.m)
 
     def gen(self):
         xi, n = np.random.normal(size=self.n), np.random.normal(size=self.n)
-        fft_xi, fft_n = np.fft.fft(xi), np.fft.fft(n)
+        fft_xi, fft_n = np.fft.rfft(xi), np.fft.rfft(n)
         fft_xi *= np.sqrt(self.normalized_psd_samples)
         fft = fft_n + fft_xi
         self.fft = fft_xi
@@ -25,7 +25,7 @@ class RandomSignalGenerator(object):
         return self.squared_fft_coefficients
 
     def get_sample(self):
-        return np.real(np.fft.ifft(self.fft))
+        return np.real(np.fft.irfft(self.fft))
 
 
 class RandomSignalGeneratorTest(object):
@@ -34,10 +34,11 @@ class RandomSignalGeneratorTest(object):
         self.n = size
 
     def show_realisation(self, external_axis=False):
-        sample = self.rsg.get_sample()[:int(8. * self.rsg.n / self.rsg.m / 2)]
+        sample = self.rsg.get_sample()
         if not external_axis:
             fig_, ax = plt.subplots()
             ax.plot(sample, label='realisation')
+            ax.set_xlim(0, int(8. * self.rsg.n / self.rsg.m / 2))
             ax.grid(1)
             ax.legend()
         return sample
@@ -47,7 +48,7 @@ class RandomSignalGeneratorTest(object):
         partial_sample = sample[:int(self.rsg.n*(self.rsg.m-8./2)/self.rsg.m)+1]
 
         acf = np.correlate(sample, partial_sample) / np.sum(partial_sample**2)
-        acf_expected = np.real(np.fft.ifft(self.rsg.normalized_psd_samples))[:len(acf)]
+        acf_expected = np.real(np.fft.irfft(self.rsg.normalized_psd_samples))[:len(acf)]
         acf_expected /= max(acf_expected)
 
         if not external_axis:
@@ -72,7 +73,7 @@ class RandomSignalGeneratorTest(object):
 
 
 if __name__ == '__main__':
-    delta = 0.75
+    delta = 1.0
 
     def _f(x):
         if abs(x) <= (1-delta)/2:
@@ -82,7 +83,7 @@ if __name__ == '__main__':
         else:
             return 1. / (1 + (np.pi / delta * (x - (1-delta)/2)) ** 2)
 
-    rsg = RandomSignalGenerator(_f, 2 ** 22, 2 ** 12)
+    rsg = RandomSignalGenerator(_f, 2 ** 15, 2 ** 8)
     rsg.gen()
 
     tester = RandomSignalGeneratorTest(rsg)
