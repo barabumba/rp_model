@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import quad
-from scipy.stats import norm
+from scipy.stats import norm, skew
 from sample_gen import RandomSignalGenerator
 
 
@@ -16,6 +16,7 @@ class BasicMLE(object):
         self.correction = self._init_correction()
 
         self.temp = np.sqrt(self.m0 /2 * quad(lambda x: self.psd_fun(x)**2, -np.inf, np.inf)[0])
+        print(quad(lambda x: self.psd_fun(x)**2, -np.inf, np.inf))
     def _init_filter_matrix(self):
         psd_samples = self.random_signal.normalized_psd_fun(self.random_signal.frequencies/self.random_signal.m)
         filter_matrix = psd_samples / (psd_samples + 1)
@@ -79,17 +80,18 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     _f = lambda x: 1./(1+(np.pi*x)**2)
-    rsg = RandomSignalGenerator(_f, 2**15, 2**8)
+    rsg = RandomSignalGenerator(_f, 2**17, 2**10)
     estimator = BasicMLE(rsg)
 
     rsg.gen()
     a = []
     t0 = time.time()
     for i in range(10**5):
+        print(i)
         rsg.gen()
         a.append(estimator.run())
     print(time.time() - t0)
-    print(np.mean(a), np.var(a))
-    plt.hist(a, bins=50, normed=True)
+    print(np.mean(a), np.var(a), skew(np.array(a)))
+    plt.hist(a, bins=50, density=True)
     plt.plot(np.linspace(-5,5,100), norm.pdf(np.linspace(-5,5,100)))
     plt.show()
