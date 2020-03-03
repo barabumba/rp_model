@@ -10,13 +10,14 @@ class RandomSignalGenerator(object):
         self.fft = None
         self.n = size
         self.m = bandwidth
+        self.q = 1
         self.frequencies = np.fft.rfftfreq(size, 1./size)
         self.normalized_psd_samples = self.normalized_psd_fun(self.frequencies/self.m)
 
     def gen(self):
         xi, n = np.random.normal(size=self.n), np.random.normal(size=self.n)
         fft_xi, fft_n = np.fft.rfft(xi), np.fft.rfft(n)
-        fft_xi *= np.sqrt(self.normalized_psd_samples)
+        fft_xi *= np.sqrt(self.q*self.normalized_psd_samples)
         fft = fft_n + fft_xi
         self.fft = fft_xi
         self.squared_fft_coefficients = np.real(fft * fft.conjugate())
